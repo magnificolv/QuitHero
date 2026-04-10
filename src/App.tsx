@@ -122,6 +122,20 @@ export default function App() {
     [todayEvents]
   );
 
+  const todayStats = useMemo(() => {
+    return {
+      puffs: todayEvents.filter(e => e.type === 'puff').length,
+      cigarettes: todayEvents.filter(e => e.type === 'cigarette').length
+    };
+  }, [todayEvents]);
+
+  const totalStats = useMemo(() => {
+    return {
+      puffs: events.filter(e => e.type === 'puff').length,
+      cigarettes: events.filter(e => e.type === 'cigarette').length
+    };
+  }, [events]);
+
   const totalSaved = useMemo(() => {
     if (events.length === 0) return 0;
     const firstEvent = parseISO(events[0].timestamp);
@@ -319,6 +333,17 @@ export default function App() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Lifetime Puffs</p>
+                <p className="text-lg font-bold text-emerald-500/80">{totalStats.puffs}</p>
+              </div>
+              <div className="space-y-1 text-right">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Lifetime Cigs</p>
+                <p className="text-lg font-bold text-rose-500/80">{totalStats.cigarettes}</p>
+              </div>
+            </div>
+
             {/* Progress Bar */}
             <div className="space-y-2">
               <div className="flex justify-between text-[10px] font-mono text-gray-500">
@@ -346,6 +371,9 @@ export default function App() {
             onClick={() => addEvent('puff')}
             className="relative h-40 bg-[#141414] border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 group overflow-hidden"
           >
+            <div className="absolute top-3 right-3 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              <span className="text-[10px] font-bold text-emerald-500">{todayStats.puffs}</span>
+            </div>
             <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-colors" />
             <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
               <Zap className="w-8 h-8 text-emerald-500" />
@@ -361,6 +389,9 @@ export default function App() {
             onClick={() => addEvent('cigarette')}
             className="relative h-40 bg-[#141414] border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 group overflow-hidden"
           >
+            <div className="absolute top-3 right-3 bg-rose-500/20 px-2 py-0.5 rounded-md border border-rose-500/20">
+              <span className="text-[10px] font-bold text-rose-500">{todayStats.cigarettes}</span>
+            </div>
             <div className="absolute inset-0 bg-rose-500/0 group-hover:bg-rose-500/5 transition-colors" />
             <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
               <Flame className="w-8 h-8 text-rose-500" />
