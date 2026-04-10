@@ -56,8 +56,12 @@ const SETTINGS_KEY = 'quit_hero_settings';
 // --- Helper Functions ---
 
 const getInitialSettings = (): UserSettings => {
-  const saved = localStorage.getItem(SETTINGS_KEY);
-  if (saved) return JSON.parse(saved);
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error("Failed to parse settings", e);
+  }
   return {
     monthlyBudget: 150,
     puffsPerDayBaseline: 200,
@@ -67,8 +71,12 @@ const getInitialSettings = (): UserSettings => {
 };
 
 const getInitialEvents = (): UsageEvent[] => {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) return JSON.parse(saved);
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error("Failed to parse events", e);
+  }
   return [];
 };
 
@@ -96,11 +104,8 @@ export default function App() {
   const secondBudget = useMemo(() => hourlyBudget / 3600, [hourlyBudget]);
 
   // Cost per unit based on baseline
-  // We assume the monthly budget is split between puffs and cigarettes if both are used.
-  // For simplicity, let's say 1 cigarette = 10 puffs in terms of "cost" if both are tracked.
-  // Or better: let the user define their usage and we calculate cost per "unit".
   const totalUnitsPerDay = useMemo(() => 
-    settings.puffsPerDayBaseline + (settings.cigarettesPerDayBaseline * 10), 
+    Math.max(1, settings.puffsPerDayBaseline + (settings.cigarettesPerDayBaseline * 10)), 
     [settings]
   );
   
