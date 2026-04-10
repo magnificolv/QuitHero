@@ -100,8 +100,10 @@ export default function App() {
 
   // Calculations
   const dailyBudget = useMemo(() => settings.monthlyBudget / 30, [settings.monthlyBudget]);
-  const hourlyBudget = useMemo(() => dailyBudget / 24, [dailyBudget]);
-  const secondBudget = useMemo(() => hourlyBudget / 3600, [hourlyBudget]);
+  
+  // 16 hours active day as requested
+  const activeHoursPerDay = 16;
+  const hourlyRate = useMemo(() => dailyBudget / activeHoursPerDay, [dailyBudget]);
 
   // Cost per unit based on baseline
   const totalUnitsPerDay = useMemo(() => 
@@ -138,12 +140,53 @@ export default function App() {
 
   const totalSaved = useMemo(() => {
     if (events.length === 0) return 0;
-    const firstEvent = parseISO(events[0].timestamp);
-    const daysSinceStart = Math.max(1, Math.ceil((new Date().getTime() - firstEvent.getTime()) / (1000 * 60 * 60 * 24)));
-    const expectedSpend = daysSinceStart * dailyBudget;
-    const actualSpend = events.reduce((acc, e) => acc + e.cost, 0);
-    return expectedSpend - actualSpend;
+    
+    // Group events by day to calculate past days savings
+    const eventsByDay: { [key: string]: number } = {};
+    events.forEach(e => {
+      const dayKey = format(parseISO(e.timestamp), 'yyyy-MM-dd');
+      eventsByDay[dayKey] = (eventsByDay[dayKey] || 0) + e.cost;
+    });
+
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const pastDays = Object.keys(eventsByDay).filter(day => day < todayKey);
+    
+    // Sum up (dailyBudget - daySpent) for all past days
+    const pastSavings = pastDays.reduce((acc, day) => acc + (dailyBudget - eventsByDay[day]), 0);
+    
+    // Also account for days where NO events happened (pure savings)
+    const firstEventDate = startOfDay(parseISO(events[0].timestamp));
+    const todayDate = startOfDay(new Date());
+    const totalDaysSinceStart = Math.max(0, Math.floor((todayDate.getTime() - firstEventDate.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    // If there were days with 0 events, they won't be in pastDays keys
+    // Total past days = totalDaysSinceStart
+    const daysWithEvents = pastDays.length;
+    const daysWithoutEvents = Math.max(0, totalDaysSinceStart - daysWithEvents);
+    
+    return pastSavings + (daysWithoutEvents * dailyBudget);
   }, [events, dailyBudget]);
+
+  const liveBalance = useMemo(() => dailyBudget - todaySpent, [dailyBudget, todaySpent]);
+
+  // Hourly Rate Meter Logic
+  const hourlyStatus = useMemo(() => {
+    const now = new Date();
+    const start = startOfDay(now);
+    // Assume active day starts at 08:00
+    const wakeupHour = 8;
+    const currentHour = now.getHours();
+    const hoursActiveSoFar = Math.max(0, Math.min(activeHoursPerDay, currentHour - wakeupHour));
+    
+    const targetSpentSoFar = hoursActiveSoFar * hourlyRate;
+    const diff = targetSpentSoFar - todaySpent;
+    
+    return {
+      diff,
+      isSaving: diff >= 0,
+      hoursActive: hoursActiveSoFar
+    };
+  }, [todaySpent, hourlyRate]);
 
   const level = useMemo(() => {
     const saved = Math.max(0, totalSaved);
@@ -153,21 +196,6 @@ export default function App() {
     if (saved < 500) return { name: 'Wealthy', icon: '💎', next: 500 };
     return { name: 'QuitHero Legend', icon: '👑', next: Infinity };
   }, [totalSaved]);
-
-  // Live Savings Ticker
-  const [liveSavings, setLiveSavings] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Calculate how much "budget" has passed since the start of the day
-      const now = new Date();
-      const start = startOfDay(now);
-      const secondsPassed = (now.getTime() - start.getTime()) / 1000;
-      const budgetAccrued = secondsPassed * secondBudget;
-      setLiveSavings(budgetAccrued - todaySpent);
-    }, 100);
-    return () => clearInterval(interval);
-  }, [secondBudget, todaySpent]);
 
   const addEvent = (type: 'puff' | 'cigarette') => {
     const newEvent: UsageEvent = {
@@ -323,15 +351,15 @@ export default function App() {
                 <p className="text-[11px] font-mono text-gray-400 uppercase tracking-[0.2em] opacity-70">Live Balance Today</p>
                 <div className="flex items-baseline gap-2">
                   <motion.h1 
-                    key={liveSavings.toFixed(2)}
+                    key={liveBalance.toFixed(2)}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className={cn(
                       "text-7xl font-black tracking-tighter text-glow-emerald",
-                      liveSavings >= 0 ? "text-emerald-400" : "text-rose-500 text-glow-rose"
+                      liveBalance >= 0 ? "text-emerald-400" : "text-rose-500 text-glow-rose"
                     )}
                   >
-                    {liveSavings >= 0 ? '+' : ''}{liveSavings.toFixed(2)}
+                    {liveBalance >= 0 ? '+' : ''}{liveBalance.toFixed(2)}
                     <span className="text-3xl ml-2 font-light opacity-50">{settings.currency}</span>
                   </motion.h1>
                 </div>
@@ -343,6 +371,40 @@ export default function App() {
               >
                 <Coins className="w-7 h-7 text-emerald-500" />
               </motion.div>
+            </div>
+
+            {/* Hourly Rate Meter */}
+            <div className="glass-dark rounded-2xl p-4 border border-white/5 space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full animate-pulse",
+                    hourlyStatus.isSaving ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+                  )} />
+                  <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">Hourly Pace ({hourlyStatus.hoursActive}h active)</span>
+                </div>
+                <span className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                  hourlyStatus.isSaving ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                )}>
+                  {hourlyStatus.isSaving ? 'SAVING SIDE' : 'OVERSPENDING'}
+                </span>
+              </div>
+              <div className="flex justify-between items-end">
+                <div className="space-y-0.5">
+                  <p className="text-[9px] text-gray-500 uppercase font-bold">Target Pace</p>
+                  <p className="text-sm font-mono font-bold text-gray-300">{hourlyRate.toFixed(2)}{settings.currency}/hr</p>
+                </div>
+                <div className="text-right space-y-0.5">
+                  <p className="text-[9px] text-gray-500 uppercase font-bold">Current Diff</p>
+                  <p className={cn(
+                    "text-sm font-mono font-bold",
+                    hourlyStatus.isSaving ? "text-emerald-400" : "text-rose-500"
+                  )}>
+                    {hourlyStatus.isSaving ? '+' : ''}{hourlyStatus.diff.toFixed(2)}{settings.currency}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/10">
