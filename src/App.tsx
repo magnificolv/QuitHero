@@ -415,6 +415,47 @@ export default function App() {
       </header>
 
       <main className="max-w-2xl mx-auto p-6 space-y-10 pb-32">
+        {/* Action Buttons */}
+        <section className="grid grid-cols-2 gap-6">
+          <motion.button
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => addEvent('puff')}
+            className="relative h-44 glass rounded-[2rem] flex flex-col items-center justify-center gap-4 group overflow-hidden transition-all duration-300 hover:border-emerald-500/30"
+          >
+            <div className="absolute top-4 right-4 glass-dark px-3 py-1 rounded-lg border border-white/10">
+              <span className="text-xs font-bold text-emerald-400 font-mono">{todayStats.puffs}</span>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-emerald-500/5 group-hover:opacity-100 transition-opacity" />
+            <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 group-hover:bg-emerald-500/20 shadow-inner">
+              <Zap className="w-9 h-9 text-emerald-500" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-bold text-xl tracking-tight">PUFF</p>
+              <p className="text-[11px] font-mono text-gray-500 tracking-wider">-{costPerPuff.toFixed(2)}{settings.currency}</p>
+            </div>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => addEvent('cigarette')}
+            className="relative h-44 glass rounded-[2rem] flex flex-col items-center justify-center gap-4 group overflow-hidden transition-all duration-300 hover:border-rose-500/30"
+          >
+            <div className="absolute top-4 right-4 glass-dark px-3 py-1 rounded-lg border border-white/10">
+              <span className="text-xs font-bold text-rose-400 font-mono">{todayStats.cigarettes}</span>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/0 to-rose-500/5 group-hover:opacity-100 transition-opacity" />
+            <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 group-hover:bg-rose-500/20 shadow-inner">
+              <Flame className="w-9 h-9 text-rose-500" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-bold text-xl tracking-tight">CIGARETTE</p>
+              <p className="text-[11px] font-mono text-gray-500 tracking-wider">-{costPerCigarette.toFixed(2)}{settings.currency}</p>
+            </div>
+          </motion.button>
+        </section>
+
         {/* Main Stats Card */}
         <section className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
@@ -424,9 +465,14 @@ export default function App() {
                 <p className="text-[11px] font-mono text-gray-400 uppercase tracking-[0.2em] opacity-70">Live Balance Today</p>
                 <div className="flex items-baseline gap-2">
                   <motion.h1 
-                    key={liveBalance.toFixed(2)}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    key={events.length}
+                    initial={{ opacity: 0.8, scale: 0.9, y: 10 }}
+                    animate={{ 
+                      opacity: 1, 
+                      scale: 1, 
+                      y: 0,
+                      transition: { type: "spring", damping: 12, stiffness: 200 }
+                    }}
                     className={cn(
                       "text-7xl font-black tracking-tighter text-glow-emerald",
                       liveBalance >= 0 ? "text-emerald-400" : "text-rose-500 text-glow-rose"
@@ -520,47 +566,6 @@ export default function App() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* Action Buttons */}
-        <section className="grid grid-cols-2 gap-6">
-          <motion.button
-            whileHover={{ y: -4, scale: 1.02 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={() => addEvent('puff')}
-            className="relative h-44 glass rounded-[2rem] flex flex-col items-center justify-center gap-4 group overflow-hidden transition-all duration-300 hover:border-emerald-500/30"
-          >
-            <div className="absolute top-4 right-4 glass-dark px-3 py-1 rounded-lg border border-white/10">
-              <span className="text-xs font-bold text-emerald-400 font-mono">{todayStats.puffs}</span>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-emerald-500/5 group-hover:opacity-100 transition-opacity" />
-            <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 group-hover:bg-emerald-500/20 shadow-inner">
-              <Zap className="w-9 h-9 text-emerald-500" />
-            </div>
-            <div className="text-center space-y-1">
-              <p className="font-bold text-xl tracking-tight">PUFF</p>
-              <p className="text-[11px] font-mono text-gray-500 tracking-wider">-{costPerPuff.toFixed(2)}{settings.currency}</p>
-            </div>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ y: -4, scale: 1.02 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={() => addEvent('cigarette')}
-            className="relative h-44 glass rounded-[2rem] flex flex-col items-center justify-center gap-4 group overflow-hidden transition-all duration-300 hover:border-rose-500/30"
-          >
-            <div className="absolute top-4 right-4 glass-dark px-3 py-1 rounded-lg border border-white/10">
-              <span className="text-xs font-bold text-rose-400 font-mono">{todayStats.cigarettes}</span>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/0 to-rose-500/5 group-hover:opacity-100 transition-opacity" />
-            <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 group-hover:bg-rose-500/20 shadow-inner">
-              <Flame className="w-9 h-9 text-rose-500" />
-            </div>
-            <div className="text-center space-y-1">
-              <p className="font-bold text-xl tracking-tight">CIGARETTE</p>
-              <p className="text-[11px] font-mono text-gray-500 tracking-wider">-{costPerCigarette.toFixed(2)}{settings.currency}</p>
-            </div>
-          </motion.button>
         </section>
 
         {/* Chart Section */}
