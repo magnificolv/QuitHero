@@ -42,12 +42,12 @@ interface UsageEvent {
 }
 
 interface UserSettings {
-  monthlyBudget: number;
-  puffsPerDayBaseline: number;
-  cigarettesPerDayBaseline: number;
+  monthlyBudget: number | string;
+  puffsPerDayBaseline: number | string;
+  cigarettesPerDayBaseline: number | string;
   currency: string;
-  manualPuffPrice?: number;
-  manualCigarettePrice?: number;
+  manualPuffPrice?: number | string;
+  manualCigarettePrice?: number | string;
 }
 
 // --- Constants ---
@@ -69,8 +69,8 @@ const getInitialSettings = (): UserSettings => {
     puffsPerDayBaseline: 200,
     cigarettesPerDayBaseline: 10,
     currency: '€',
-    manualPuffPrice: undefined,
-    manualCigarettePrice: undefined
+    manualPuffPrice: 0.04,
+    manualCigarettePrice: 0.31
   };
 };
 
@@ -103,7 +103,7 @@ export default function App() {
   }, [settings]);
 
   // Calculations
-  const dailyBudget = useMemo(() => settings.monthlyBudget / 30, [settings.monthlyBudget]);
+  const dailyBudget = useMemo(() => Number(settings.monthlyBudget) / 30, [settings.monthlyBudget]);
   
   // 16 hours active day as requested
   const activeHoursPerDay = 16;
@@ -111,20 +111,22 @@ export default function App() {
 
   // Cost per unit based on baseline
   const totalUnitsPerDay = useMemo(() => 
-    Math.max(1, settings.puffsPerDayBaseline + (settings.cigarettesPerDayBaseline * 10)), 
-    [settings]
+    Math.max(1, Number(settings.puffsPerDayBaseline) + (Number(settings.cigarettesPerDayBaseline) * 10)), 
+    [settings.puffsPerDayBaseline, settings.cigarettesPerDayBaseline]
   );
   
   const costPerPuff = useMemo(() => {
-    if (settings.manualPuffPrice !== undefined && settings.manualPuffPrice > 0) {
-      return settings.manualPuffPrice;
+    const manual = Number(settings.manualPuffPrice);
+    if (settings.manualPuffPrice !== undefined && manual > 0) {
+      return manual;
     }
     return dailyBudget / totalUnitsPerDay;
   }, [dailyBudget, totalUnitsPerDay, settings.manualPuffPrice]);
 
   const costPerCigarette = useMemo(() => {
-    if (settings.manualCigarettePrice !== undefined && settings.manualCigarettePrice > 0) {
-      return settings.manualCigarettePrice;
+    const manual = Number(settings.manualCigarettePrice);
+    if (settings.manualCigarettePrice !== undefined && manual > 0) {
+      return manual;
     }
     return costPerPuff * 10;
   }, [costPerPuff, settings.manualCigarettePrice]);
@@ -268,9 +270,15 @@ export default function App() {
             <div className="space-y-3">
               <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Monthly Budget ({settings.currency})</label>
               <input 
-                type="number" 
+                type="text" 
+                inputMode="decimal"
                 value={settings.monthlyBudget}
-                onChange={e => setSettings(s => ({ ...s, monthlyBudget: Number(e.target.value) }))}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    setSettings(s => ({ ...s, monthlyBudget: val }));
+                  }
+                }}
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
                 placeholder="0.00"
               />
@@ -281,18 +289,30 @@ export default function App() {
               <div className="space-y-3">
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Daily Puffs</label>
                 <input 
-                  type="number" 
+                  type="text" 
+                  inputMode="numeric"
                   value={settings.puffsPerDayBaseline}
-                  onChange={e => setSettings(s => ({ ...s, puffsPerDayBaseline: Number(e.target.value) }))}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*$/.test(val)) {
+                      setSettings(s => ({ ...s, puffsPerDayBaseline: val }));
+                    }
+                  }}
                   className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                 />
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Daily Cigs</label>
                 <input 
-                  type="number" 
+                  type="text" 
+                  inputMode="numeric"
                   value={settings.cigarettesPerDayBaseline}
-                  onChange={e => setSettings(s => ({ ...s, cigarettesPerDayBaseline: Number(e.target.value) }))}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*$/.test(val)) {
+                      setSettings(s => ({ ...s, cigarettesPerDayBaseline: val }));
+                    }
+                  }}
                   className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                 />
               </div>
@@ -304,10 +324,15 @@ export default function App() {
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Puff Price</label>
                   <input 
-                    type="number" 
-                    step="0.01"
-                    value={settings.manualPuffPrice || ''}
-                    onChange={e => setSettings(s => ({ ...s, manualPuffPrice: e.target.value ? Number(e.target.value) : undefined }))}
+                    type="text" 
+                    inputMode="decimal"
+                    value={settings.manualPuffPrice ?? ''}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                        setSettings(s => ({ ...s, manualPuffPrice: val }));
+                      }
+                    }}
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
                     placeholder="Auto"
                   />
@@ -315,10 +340,15 @@ export default function App() {
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Cig Price</label>
                   <input 
-                    type="number" 
-                    step="0.01"
-                    value={settings.manualCigarettePrice || ''}
-                    onChange={e => setSettings(s => ({ ...s, manualCigarettePrice: e.target.value ? Number(e.target.value) : undefined }))}
+                    type="text" 
+                    inputMode="decimal"
+                    value={settings.manualCigarettePrice ?? ''}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                        setSettings(s => ({ ...s, manualCigarettePrice: val }));
+                      }
+                    }}
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
                     placeholder="Auto"
                   />
@@ -731,9 +761,15 @@ export default function App() {
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Monthly Budget</label>
                   <div className="relative">
                     <input 
-                      type="number" 
+                      type="text" 
+                      inputMode="decimal"
                       value={settings.monthlyBudget}
-                      onChange={e => setSettings(s => ({ ...s, monthlyBudget: Number(e.target.value) }))}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, monthlyBudget: val }));
+                        }
+                      }}
                       className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                     />
                     <span className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 font-bold">{settings.currency}</span>
@@ -744,18 +780,30 @@ export default function App() {
                   <div className="space-y-4">
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Daily Puffs</label>
                     <input 
-                      type="number" 
+                      type="text" 
+                      inputMode="numeric"
                       value={settings.puffsPerDayBaseline}
-                      onChange={e => setSettings(s => ({ ...s, puffsPerDayBaseline: Number(e.target.value) }))}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, puffsPerDayBaseline: val }));
+                        }
+                      }}
                       className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                     />
                   </div>
                   <div className="space-y-4">
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Daily Cigs</label>
                     <input 
-                      type="number" 
+                      type="text" 
+                      inputMode="numeric"
                       value={settings.cigarettesPerDayBaseline}
-                      onChange={e => setSettings(s => ({ ...s, cigarettesPerDayBaseline: Number(e.target.value) }))}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, cigarettesPerDayBaseline: val }));
+                        }
+                      }}
                       className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                     />
                   </div>
@@ -767,10 +815,15 @@ export default function App() {
                     <div className="space-y-4">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Puff Price</label>
                       <input 
-                        type="number" 
-                        step="0.01"
-                        value={settings.manualPuffPrice || ''}
-                        onChange={e => setSettings(s => ({ ...s, manualPuffPrice: e.target.value ? Number(e.target.value) : undefined }))}
+                        type="text" 
+                        inputMode="decimal"
+                        value={settings.manualPuffPrice ?? ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                            setSettings(s => ({ ...s, manualPuffPrice: val }));
+                          }
+                        }}
                         className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
                         placeholder="Auto"
                       />
@@ -778,10 +831,15 @@ export default function App() {
                     <div className="space-y-4">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Cig Price</label>
                       <input 
-                        type="number" 
-                        step="0.01"
-                        value={settings.manualCigarettePrice || ''}
-                        onChange={e => setSettings(s => ({ ...s, manualCigarettePrice: e.target.value ? Number(e.target.value) : undefined }))}
+                        type="text" 
+                        inputMode="decimal"
+                        value={settings.manualCigarettePrice ?? ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                            setSettings(s => ({ ...s, manualCigarettePrice: val }));
+                          }
+                        }}
                         className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
                         placeholder="Auto"
                       />
