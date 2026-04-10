@@ -46,6 +46,8 @@ interface UserSettings {
   puffsPerDayBaseline: number;
   cigarettesPerDayBaseline: number;
   currency: string;
+  manualPuffPrice?: number;
+  manualCigarettePrice?: number;
 }
 
 // --- Constants ---
@@ -66,7 +68,9 @@ const getInitialSettings = (): UserSettings => {
     monthlyBudget: 150,
     puffsPerDayBaseline: 200,
     cigarettesPerDayBaseline: 10,
-    currency: '€'
+    currency: '€',
+    manualPuffPrice: undefined,
+    manualCigarettePrice: undefined
   };
 };
 
@@ -111,8 +115,19 @@ export default function App() {
     [settings]
   );
   
-  const costPerPuff = useMemo(() => dailyBudget / totalUnitsPerDay, [dailyBudget, totalUnitsPerDay]);
-  const costPerCigarette = useMemo(() => costPerPuff * 10, [costPerPuff]);
+  const costPerPuff = useMemo(() => {
+    if (settings.manualPuffPrice !== undefined && settings.manualPuffPrice > 0) {
+      return settings.manualPuffPrice;
+    }
+    return dailyBudget / totalUnitsPerDay;
+  }, [dailyBudget, totalUnitsPerDay, settings.manualPuffPrice]);
+
+  const costPerCigarette = useMemo(() => {
+    if (settings.manualCigarettePrice !== undefined && settings.manualCigarettePrice > 0) {
+      return settings.manualCigarettePrice;
+    }
+    return costPerPuff * 10;
+  }, [costPerPuff, settings.manualCigarettePrice]);
 
   const todayEvents = useMemo(() => 
     events.filter(e => isSameDay(parseISO(e.timestamp), new Date())),
@@ -280,6 +295,34 @@ export default function App() {
                   onChange={e => setSettings(s => ({ ...s, cigarettesPerDayBaseline: Number(e.target.value) }))}
                   className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                 />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-white/5 space-y-6">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">Manual Pricing (Optional)</p>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Puff Price</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={settings.manualPuffPrice || ''}
+                    onChange={e => setSettings(s => ({ ...s, manualPuffPrice: e.target.value ? Number(e.target.value) : undefined }))}
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
+                    placeholder="Auto"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Cig Price</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={settings.manualCigarettePrice || ''}
+                    onChange={e => setSettings(s => ({ ...s, manualCigarettePrice: e.target.value ? Number(e.target.value) : undefined }))}
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
+                    placeholder="Auto"
+                  />
+                </div>
               </div>
             </div>
 
@@ -715,6 +758,34 @@ export default function App() {
                       onChange={e => setSettings(s => ({ ...s, cigarettesPerDayBaseline: Number(e.target.value) }))}
                       className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                     />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 space-y-6">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">Manual Pricing (Optional)</p>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Puff Price</label>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        value={settings.manualPuffPrice || ''}
+                        onChange={e => setSettings(s => ({ ...s, manualPuffPrice: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
+                        placeholder="Auto"
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Cig Price</label>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        value={settings.manualCigarettePrice || ''}
+                        onChange={e => setSettings(s => ({ ...s, manualCigarettePrice: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder:text-white/10"
+                        placeholder="Auto"
+                      />
+                    </div>
                   </div>
                 </div>
 
