@@ -1,0 +1,16 @@
+{
+  "short_name": "QuitHero",
+  "name": "QuitHero: Nicotine Tracker",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5971/5971593.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#050505",
+  "background_color": "#050505"
+}

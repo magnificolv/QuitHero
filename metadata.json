@@ -1,0 +1,5 @@
+{
+  "name": "QuitHero: Nicotine Tracker",
+  "description": "A gamified nicotine quitting app that tracks puffs and cigarettes, calculating real-time savings and financial impact to turn quitting into a rewarding game.",
+  "requestFramePermissions": []
+}
