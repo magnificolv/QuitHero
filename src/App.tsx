@@ -155,6 +155,8 @@ export default function App() {
     };
   }, [events]);
 
+  const liveBalance = useMemo(() => Number(dailyBudget) - todaySpent, [dailyBudget, todaySpent]);
+
   const totalSaved = useMemo(() => {
     if (events.length === 0) return 0;
     
@@ -181,10 +183,13 @@ export default function App() {
     const daysWithEvents = pastDays.length;
     const daysWithoutEvents = Math.max(0, totalDaysSinceStart - daysWithEvents);
     
-    return pastSavings + (daysWithoutEvents * dailyBudget);
-  }, [events, dailyBudget]);
-
-  const liveBalance = useMemo(() => dailyBudget - todaySpent, [dailyBudget, todaySpent]);
+    const pastDaysSavings = pastSavings + (daysWithoutEvents * dailyBudget);
+    
+    // If today's balance is negative, deduct it from total saved immediately
+    const currentOverspending = liveBalance < 0 ? liveBalance : 0;
+    
+    return pastDaysSavings + currentOverspending;
+  }, [events, dailyBudget, liveBalance]);
 
   // Hourly Rate Meter Logic
   const hourlyStatus = useMemo(() => {
